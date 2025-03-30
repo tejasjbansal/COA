@@ -1,0 +1,194 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoA Compliance Analyzer</title>
+    <link rel="stylesheet" href="static/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>CoA Compliance Analyzer</h1>
+            <p>Upload and compare supplier certificates with manufacturer batch results</p>
+        </header>
+
+        <main>
+            <section class="upload-section">
+                <div class="card">
+                    <h2>Upload Documents</h2>
+                    <form id="upload-form" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label for="supplier-coa">Supplier Certificate of Analysis:</label>
+                            <div class="file-input-container">
+                                <input type="file" id="supplier-coa" name="supplier_coa" accept=".pdf,.jpg,.jpeg,.png" required>
+                                <div class="file-preview" id="supplier-preview">
+                                    <p>No file selected</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="manufacturer-results">Manufacturer Batch Results:</label>
+                            <div class="file-input-container">
+                                <input type="file" id="manufacturer-results" name="manufacturer_results" accept=".pdf,.jpg,.jpeg,.png" required>
+                                <div class="file-preview" id="manufacturer-preview">
+                                    <p>No file selected</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="batch-number">Batch Reference:</label>
+                            <input type="text" id="batch-number" name="batch_number" required>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Process Documents</button>
+                    </form>
+                </div>
+            </section>
+            
+            <section class="results-section" id="results-section" style="display: none;">
+                <div class="card">
+                    <div class="results-header">
+                        <h2>Compliance Comparison Results</h2>
+                        <div class="action-buttons">
+                            <button id="download-pdf" class="btn btn-secondary">Download PDF</button>
+                        </div>
+                    </div>
+                    
+                    <div id="loading-indicator" style="display: none;">
+                        <div class="spinner"></div>
+                        <p>Analyzing documents, please wait...</p>
+                    </div>
+                    
+                    <div id="results-content">
+                        <div class="batch-info">
+                            <h3>Batch Information</h3>
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <span class="info-label">Batch Reference:</span>
+                                    <span id="result-batch-ref" class="info-value">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Supplier Batch:</span>
+                                    <span id="result-supplier-batch" class="info-value">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Product:</span>
+                                    <span id="result-product" class="info-value">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Comparison Date:</span>
+                                    <span id="result-date" class="info-value">-</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Physical Characteristics Table -->
+                        <div class="results-table-container">
+                            <h3>Physical Characteristics Comparison</h3>
+                            <table class="results-table" id="physical-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Supplier Result</th>
+                                        <th>Manufacturer Result</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Rows will be dynamically populated -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Chemical Analysis Table -->
+                        <div class="results-table-container">
+                            <h3>Chemical Analysis Comparison</h3>
+                            <table class="results-table" id="chemical-table">
+                                <thead>
+                                    <tr>
+                                        <th>Test</th>
+                                        <th>Supplier Result</th>
+                                        <th>Manufacturer Result</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Rows will be dynamically populated -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Microbiological Testing Table -->
+                        <div class="results-table-container">
+                            <h3>Microbiological Testing Comparison</h3>
+                            <table class="results-table" id="micro-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Supplier Result</th>
+                                        <th>Manufacturer Result</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Rows will be dynamically populated -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Compliance Summary -->
+                        <div class="compliance-summary">
+                            <h3>Compliance Summary</h3>
+                            <div class="summary-item">
+                                <span class="summary-label">Overall Compliance:</span>
+                                <span id="overall-compliance" class="summary-value compliance-status">-</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Variation Tolerance:</span>
+                                <span id="variation-tolerance" class="summary-value">-</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Batch Approval Status:</span>
+                                <span id="batch-approval" class="summary-value approval-status">-</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Certification -->
+                        <div class="certification">
+                            <h3>Certification</h3>
+                            <div class="certification-item">
+                                <span class="certification-label">Certified By:</span>
+                                <span id="certified-by" class="certification-value">-</span>
+                            </div>
+                            <div class="certification-item">
+                                <span class="certification-label">Reviewed By:</span>
+                                <span id="reviewed-by" class="certification-value">-</span>
+                            </div>
+                            <div class="certification-item">
+                                <span class="certification-label">Certification Number:</span>
+                                <span id="certification-number" class="certification-value">-</span>
+                            </div>
+                            <div class="certification-item">
+                                <span class="certification-label">Certification Date:</span>
+                                <span id="certification-date" class="certification-value">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+        
+        <footer>
+            <p>&copy; 2025 CoA Compliance Analyzer | LifeScience Pharmaceuticals</p>
+        </footer>
+    </div>
+    
+    <script src="static/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+flask
+pytesseract
+pdf2image
+pillow
+langchain
+openai
+numpy
+werkzeug
+python-dotenv
+langchain-groq
