@@ -677,7 +677,7 @@ def main():
     st.markdown('<p class="sub-header">Upload and compare supplier certificates with manufacturer batch results</p>', unsafe_allow_html=True)
     
     # Sidebar navigation
-    st.sidebar.image("Novartis-Emblem.png", use_container_width=True) # Replace with your company logo
+    st.sidebar.image("logo.jpg", use_container_width=True) # Replace with your company logo
     st.sidebar.title("Navigation")
     
     page = st.sidebar.radio("Select a page:", 
@@ -1066,33 +1066,67 @@ def render_results_content():
         st.markdown('</div>', unsafe_allow_html=True)
 
 def render_search_page():
-    """Render the search page"""
+    """Render the search page with proper state management"""
     st.markdown('<h2 class="section-header">Search Historical Reports</h2>', unsafe_allow_html=True)
 
-    search_batch = st.text_input("Enter Batch Reference Number")
-    search_button = st.button("Search", type="primary")
+    # Otherwise, show the search interface
+    search_batch = st.text_input("Enter Batch Reference Number", key="search_batch")
+    search_button = st.button("Search", type="primary", key="search_button")
 
     if search_button and search_batch:
-        results = search_reports(search_batch)
-        
-        if results:
-            st.success(f"Found {len(results)} reports matching batch reference '{search_batch}'")
-            print(results)
+        with st.spinner(f"Searching for reports matching batch '{search_batch}'..."):
+            results = search_reports(search_batch)
             
-            for i, result in enumerate(results):
-                with st.expander(f"Report {i+1}: {result['supplier_file']} vs {result['manufacturer_file']} ({result['date']})"):
-                    view_button = st.button(f"View Report {i+1}", key=f"view_{i}")
-                    
-                    if view_button:
-                        st.session_state['current_results'] = result['results']
-                        st.session_state['current_comparison_id'] = result['id']
+            if results:
+                st.success(f"Found {len(results)} reports matching batch reference '{search_batch}'")
+                
+                # Display results in a table with view buttons
+                for i, result in enumerate(results):
+                    with st.container():
+                        st.markdown("---")
+                        col1, col2 = st.columns([3, 1])
+                        
+                        with col1:
+                            st.markdown(f"**Report {i+1}**")
+                            st.markdown(f"**Supplier Document:** {result['supplier_file']}")
+                            st.markdown(f"**Manufacturer Document:** {result['manufacturer_file']}")
+                            st.markdown(f"**Date:** {result['date']}")
+                            print(result)
+                            pdf_bytes = create_pdf_report(result['results'])
+                            if pdf_bytes:
+                                st.markdown(get_download_link(pdf_bytes, f"CoA_Report_{result['results']['batch_info']['batch_reference']}.pdf"), unsafe_allow_html=True)
+                            
+                            st.markdown('</div>', unsafe_allow_html=True)
+                                                
+            else:
+                st.warning(f"No reports found matching batch reference '{search_batch}'")
 
-                        st.rerun()
-        else:
-            st.warning(f"No reports found matching batch reference '{search_batch}'")
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
+def display_report(report_data):
+    """Display a full report with all details"""
+    st.markdown('<h2 class="section-header">Report Details</h2>', unsafe_allow_html=True)
+    
+    # Batch info
+    render_batch_info(report_data)
+    
+    # All comparison tables
+    render_comparison_table("Physical Characteristics", report_data["physical_characteristics"])
+    render_comparison_table("Chemical Analysis", report_data["chemical_analysis"], "test")
+    render_comparison_table("Microbiological Testing", report_data["microbiological_testing"])
+    
+    # Compliance summary and certification
+    render_compliance_summary(report_data)
+    render_certification(report_data)
+    
+    # Add download button
+    pdf_bytes = create_pdf_report(report_data)
+    if pdf_bytes:
+        st.markdown(
+            get_download_link(
+                pdf_bytes, 
+                f"CoA_Report_{report_data['batch_info']['batch_reference']}.pdf"
+            ), 
+            unsafe_allow_html=True
+        )
 def render_about_page():
     """Render the about page"""
     st.markdown('<h2 class="section-header">About CoA Compliance Analyzer</h2>', unsafe_allow_html=True)
